@@ -59,48 +59,42 @@ void oscEvent(OscMessage msg) {
 void draw() {
   background(30);
 
-  // 左コントローラー（画面左半分）
-  float lsx = map(lx, -2, 2, 0, width/2);
-  float lsy = map(lz, -2, 2, 0, height);
+  // 両方のコントローラーを同じ座標空間にマッピング
+  float lsx = map(lx, 2, -2, 0, width);
+  float lsy = map(lz, 2, -2, 0, height);
 
-  // 右コントローラー（画面右半分）
-  float rsx = map(rx, -2, 2, width/2, width);
-  float rsy = map(rz, -2, 2, 0, height);
+  float rsx = map(rx, 2, -2, 0, width);
+  float rsy = map(rz, 2, -2, 0, height);
 
-  // 左：グリップで赤
+  // 左コントローラー
+  noStroke();
   fill(lGrip == 1 ? color(255, 100, 100) : color(100, 200, 255));
   circle(lsx, lsy, 20 + lTrigger * 40);
 
-  // 左：Yaw方向に線を引いて向きを表示
   stroke(100, 200, 255);
   float lAngle = radians(lYaw);
-  line(lsx, lsy,
-       lsx + cos(lAngle) * 40,
-       lsy + sin(lAngle) * 40);
+  line(lsx, lsy, lsx + cos(lAngle) * 40, lsy + sin(lAngle) * 40);
 
-  // 右：グリップで赤
+  // 右コントローラー
   noStroke();
   fill(rGrip == 1 ? color(255, 100, 100) : color(100, 255, 200));
   circle(rsx, rsy, 20 + rTrigger * 40);
 
-  // 右：Yaw方向に線を引いて向きを表示
   stroke(100, 255, 200);
   float rAngle = radians(rYaw);
-  line(rsx, rsy,
-       rsx + cos(rAngle) * 40,
-       rsy + sin(rAngle) * 40);
+  line(rsx, rsy, rsx + cos(rAngle) * 40, rsy + sin(rAngle) * 40);
 
   // テキスト表示
   noStroke();
   fill(255);
   textSize(13);
   int tx = 20;
-  text("=== LEFT ===",              tx, 30);
+  text("=== LEFT ===", tx, 30);
   text("pos:   " + fmt(lx) + ", " + fmt(ly) + ", " + fmt(lz), tx, 48);
   text("rot:   P=" + fmt(lPitch) + " Y=" + fmt(lYaw) + " R=" + fmt(lRoll), tx, 66);
   text("trig:  " + fmt(lTrigger) + "  grip: " + lGrip + "  menu: " + lMenu, tx, 84);
 
-  text("=== RIGHT ===",             tx, 120);
+  text("=== RIGHT ===", tx, 120);
   text("pos:   " + fmt(rx) + ", " + fmt(ry) + ", " + fmt(rz), tx, 138);
   text("rot:   P=" + fmt(rPitch) + " Y=" + fmt(rYaw) + " R=" + fmt(rRoll), tx, 156);
   text("trig:  " + fmt(rTrigger) + "  grip: " + rGrip + "  menu: " + rMenu, tx, 174);
