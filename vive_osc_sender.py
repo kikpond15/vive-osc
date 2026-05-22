@@ -3,9 +3,10 @@ import time
 import math
 from pythonosc import udp_client
 
+# OSC送信先
 client = udp_client.SimpleUDPClient("127.0.0.1", 9000)
 
-vr = openvr.init(openvr.VRApplication_Background)
+vr = openvr.init(openvr.VRApplication_Other)
 poses = (openvr.TrackedDevicePose_t * openvr.k_unMaxTrackedDeviceCount)()
 
 def get_position(matrix):
@@ -15,7 +16,6 @@ def get_position(matrix):
     return x, y, z
 
 def get_euler(matrix):
-    """4x4行列からオイラー角（度）を取得"""
     pitch = math.asin(-matrix[1][2])
     yaw   = math.atan2(matrix[0][2], matrix[2][2])
     roll  = math.atan2(matrix[1][0], matrix[1][1])
@@ -24,6 +24,18 @@ def get_euler(matrix):
         math.degrees(yaw),
         math.degrees(roll)
     )
+
+# トラッカーに連番を割り当てるための辞書
+tracker_index_map = {}
+tracker_counter = [0]
+
+def get_tracker_id(device_i):
+    """デバイスインデックスをトラッカー連番（0, 1, 2...）に変換"""
+    if device_i not in tracker_index_map:
+        tracker_index_map[device_i] = tracker_counter[0]
+        tracker_counter[0] += 1
+        print(f"[New Tracker] device={device_i} → tracker_id={tracker_index_map[device_i]}")
+    return tracker_index_map[device_i]
 
 while True:
     vr.getDeviceToAbsoluteTrackingPose(
@@ -44,11 +56,10 @@ while True:
             hand = vr.getControllerRoleForTrackedDeviceIndex(i)
             side = "left" if hand == openvr.TrackedControllerRole_LeftHand else "right"
 
-            # 位置・回転
             client.send_message(f"/controller/{side}/pos", [x, y, z])
             client.send_message(f"/controller/{side}/rot", [pitch, yaw, roll])
 
-            # ボタン
+            result, state = vr.getControllerState(i)
             result, state = vr.getControllerState(i)
             if result:
                 trigger = state.rAxis[1].x
@@ -58,9 +69,14 @@ while True:
                 client.send_message(f"/controller/{side}/grip",    int(grip))
                 client.send_message(f"/controller/{side}/menu",    int(menu))
 
+                client.send_message(f"/controller/{side}/trigger", trigger)
+                client.send_message(f"/controller/{side}/grip",    int(grip))
+                client.send_message(f"/controller/{side}/menu",    int(menu))
+
         # VIVEトラッカー
         elif device_class == openvr.TrackedDeviceClass_GenericTracker:
-            client.send_message(f"/tracker/{i}/pos", [x, y, z])
-            client.send_message(f"/tracker/{i}/rot", [pitch, yaw, roll])
+            tid = get_tracker_id(i)
+            client.send_message(f"/tracker/{tid}/pos", [x, y, z])
+            client.send_message(f"/tracker/{tid}/rot", [pitch, yaw, roll])
 
     time.sleep(1/60)
